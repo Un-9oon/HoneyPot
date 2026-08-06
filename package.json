@@ -1,0 +1,21 @@
+{
+  "name": "honeypot-defense-system",
+  "version": "3.0.0",
+  "description": "Production-grade network honeypot with real-time monitoring, attack analysis, and threat intelligence",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "bash scripts/setup.sh",
+    "quick-start": "bash scripts/start.sh",
+    "stop": "bash scripts/stop.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "ws": "^8.18.0",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.0",
+    "level": "^8.0.1",
+    "ssh2": "^1.16.0",
+    "geoip-lite": "^1.4.10"
+  }
+}

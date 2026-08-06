@@ -1,0 +1,18 @@
+{
+  "bind": "127.0.0.1",
+  "services": {
+    "ssh": { "enabled": true, "port": 2222, "banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6" },
+    "http": { "enabled": true, "port": 8080, "serverHeader": "Apache/2.4.56 (Ubuntu)" },
+    "ftp": { "enabled": true, "port": 2121, "banner": "220 ProFTPD 1.3.8 Server ready." },
+    "telnet": { "enabled": true, "port": 2323 }
+  },
+  "monitor": { "port": 3000, "wsPath": "/ws" },
+  "alerts": { "desktop": true, "webhooks": [], "logFile": "logs/alerts.log" },
+  "notifications": { "desktop": true, "sound": true, "minSeverity": "MEDIUM" },
+  "capture": { "maxSessionSize": 65536, "recordSessions": true },
+  "auth": { "enabled": true },
+  "maxSessionDuration": 300,
+  "maxConnectionsPerIP": 20,
+  "rateLimitWindow": 60,
+  "rateLimitMax": 100
+}
