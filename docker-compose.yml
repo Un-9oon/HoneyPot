@@ -1,0 +1,18 @@
+services:
+  honeypot:
+    build: .
+    container_name: advanced-honeypot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Dashboard
+      - "8080:8080"  # HTTP Trap
+      - "2222:2222"  # SSH Trap
+      - "2121:2121"  # FTP Trap
+      - "2323:2323"  # Telnet Trap
+    volumes:
+      # Persist data and logs outside the container
+      - ./data:/usr/src/app/data
+      - ./logs:/usr/src/app/logs
+      - ./config/auth.json:/usr/src/app/config/auth.json
+    environment:
+      - NODE_ENV=production
