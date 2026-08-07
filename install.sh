@@ -88,14 +88,14 @@ npm install >> "$LOG_FILE" 2>&1
 
 # 7. Start the Honeypot with PM2
 draw_progress 90 "Launching Honeypot engine via PM2..."
-pm2 stop honeypot >> "$LOG_FILE" 2>&1 || true
-pm2 delete honeypot >> "$LOG_FILE" 2>&1 || true
-pm2 start server.js --name "honeypot" >> "$LOG_FILE" 2>&1
+npx pm2 stop honeypot >> "$LOG_FILE" 2>&1 || true
+npx pm2 delete honeypot >> "$LOG_FILE" 2>&1 || true
+npx pm2 start server.js --name "honeypot" >> "$LOG_FILE" 2>&1
 
 # 8. Setup PM2 Startup Script
 draw_progress 95 "Configuring server auto-restart sequence..."
-env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u root --hp /root >> "$LOG_FILE" 2>&1 || true
-pm2 save >> "$LOG_FILE" 2>&1
+npx pm2 startup systemd -u root --hp /root >> "$LOG_FILE" 2>&1 || true
+npx pm2 save >> "$LOG_FILE" 2>&1
 
 draw_progress 100 "Finalizing deployment..."
 sleep 1
