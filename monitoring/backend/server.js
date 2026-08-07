@@ -205,6 +205,24 @@ class MonitorServer {
       }
     });
 
+    app.post("/api/reset", authMiddleware, async (req, res) => {
+      try {
+        this.attacks = [];
+        this.credentials = [];
+        this.sessions = [];
+        this.connections = [];
+        this.notifications = [];
+        this.attackCounter = 0;
+        this.notifCounter = 0;
+        this.profiler = new AttackerProfiler();
+        try { await this.db.clear(); } catch {}
+        const logDir = path.join(__dirname, "../../logs");
+        try { const files = fs.readdirSync(logDir); for (const f of files) { try { fs.unlinkSync(path.join(logDir, f)); } catch {} } } catch {}
+        this._broadcast({ type: "reset" });
+        res.json({ ok: true, message: "All data cleared" });
+      } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
     app.get("/api/intel/profiles", authMiddleware, (req, res) => {
       res.json(this.profiler.getAllProfiles());
     });
