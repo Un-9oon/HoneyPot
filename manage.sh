@@ -28,7 +28,17 @@ case "$command" in
         
         echo -e "${CYAN}[*] Setting up ShieldWatch RASP Security...${NC}"
         if [ ! -d "../Shieldwatch" ]; then
-            git clone https://Un-9oon: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@github.com/Un-9oon/Shieldwatch-SecurityAppliance.git ../Shieldwatch
+            echo -e "${YELLOW}ShieldWatch repository is private. Please provide your GitHub Personal Access Token (PAT):${NC}"
+            read -p "GitHub PAT: " GITHUB_PAT
+            if [ -z "$GITHUB_PAT" ]; then
+                echo -e "${RED}[!] Token cannot be empty. Aborting.${NC}"
+                exit 1
+            fi
+            git clone "https://Un-9oon:${GITHUB_PAT}@github.com/Un-9oon/Shieldwatch-SecurityAppliance.git" ../Shieldwatch
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}[!] Failed to clone ShieldWatch. Please check your token.${NC}"
+                exit 1
+            fi
         fi
         TOKEN=$(openssl rand -hex 32)
         echo "SW_API_TOKEN=$TOKEN" > monitoring/backend/.env
