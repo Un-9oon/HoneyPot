@@ -25,20 +25,39 @@ case "$command" in
         else
             echo -e "${RED}[!] Error: install.sh not found.${NC}"
         fi
+        
+        echo -e "${CYAN}[*] Setting up ShieldWatch RASP Security...${NC}"
+        if [ ! -d "../Shieldwatch" ]; then
+            git clone https://Un-9oon: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@github.com/Un-9oon/Shieldwatch-SecurityAppliance.git ../Shieldwatch
+        fi
+        TOKEN=$(openssl rand -hex 32)
+        echo "SW_API_TOKEN=$TOKEN" > monitoring/backend/.env
+        echo "SW_CEREBRO_ADDR=127.0.0.1:3002" >> monitoring/backend/.env
+        echo "SW_APP_ID=nexus-honeypot" >> monitoring/backend/.env
+        
+        mkdir -p ../Shieldwatch/collector
+        echo "SW_API_TOKEN=$TOKEN" > ../Shieldwatch/collector/.env
+        echo -e "${GREEN}[+] ShieldWatch integrated successfully!${NC}"
         ;;
     start)
         echo -e "${GREEN}[*] Starting Honeypot & Dashboard...${NC}"
         sudo npx pm2 start server.js --name "honeypot"
+        
+        echo -e "${GREEN}[*] Starting ShieldWatch Collector...${NC}"
+        if [ -d "../Shieldwatch/collector" ]; then
+            sudo npx pm2 start ../Shieldwatch/collector/collector.js --name "shieldwatch"
+        fi
+        
         sudo npx pm2 save
         echo -e "${GREEN}[+] System online. Run './manage.sh dashboard' for access info.${NC}"
         ;;
     stop)
         echo -e "${GREEN}[*] Stopping Honeypot Services...${NC}"
-        sudo npx pm2 stop honeypot
+        sudo npx pm2 stop honeypot shieldwatch
         ;;
     restart)
         echo -e "${GREEN}[*] Restarting Honeypot Services...${NC}"
-        sudo npx pm2 restart honeypot
+        sudo npx pm2 restart honeypot shieldwatch
         ;;
     dashboard)
         echo -e "${CYAN}================================================${NC}"
