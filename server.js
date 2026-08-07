@@ -61,10 +61,10 @@ async function startServices() {
 
   console.log();
 
-  const monitor = new MonitorServer(bus, config, BIND);
+  const monitor = new MonitorServer(bus, config, "127.0.0.1");
   await monitor.start();
   services.push(monitor);
-  console.log(chalk.green(`  ✓ Dashboard        → http://${BIND}:${config.monitor.port}`));
+  console.log(chalk.green(`  ✓ Dashboard        → http://127.0.0.1:${config.monitor.port}`));
   console.log();
   console.log(chalk.yellow(`  Honeypot system active. Waiting for connections...\n`));
 
