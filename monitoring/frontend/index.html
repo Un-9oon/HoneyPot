@@ -601,7 +601,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
   </div>
 </div>
 
-<div class="modal-overlay" id="login-overlay" style="z-index:9999;background:var(--bg)">
+<div id="login-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;justify-content:center;align-items:center;backdrop-filter:blur(8px)">
   <div class="glass" style="padding:40px;border-radius:var(--r);width:360px;text-align:center;box-shadow:0 0 50px rgba(255,58,84,0.1)">
     <div style="font-size:12px;font-weight:900;letter-spacing:4px;color:var(--red);margin-bottom:24px">HONEYPOT SECURE LOGIN</div>
     <input type="text" id="login-user" placeholder="Username" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:6px;margin-bottom:12px;outline:none">
@@ -620,6 +620,7 @@ window.fetch = async function() {
   config.headers['Authorization'] = 'Bearer ' + (localStorage.getItem('hp_token')||'');
   const response = await originalFetch(resource, config);
   if(response.status === 401 && !resource.includes('/api/login')) {
+    localStorage.removeItem('hp_token');
     document.getElementById('login-overlay').style.display='flex';
   }
   return response;
