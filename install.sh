@@ -51,6 +51,8 @@ sleep 1
 # 2. Update system and install system dependencies
 draw_progress 15 "Updating system packages & dependencies..."
 export DEBIAN_FRONTEND=noninteractive
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections >> "$LOG_FILE" 2>&1
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections >> "$LOG_FILE" 2>&1
 apt-get update -y >> "$LOG_FILE" 2>&1
 apt-get install -y -q curl wget build-essential iptables-persistent >> "$LOG_FILE" 2>&1
 
