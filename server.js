@@ -2,6 +2,7 @@ const EventEmitter = require("events");
 const fs = require("fs");
 const path = require("path");
 const chalk = require("chalk");
+const os = require("os");
 
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config/honeypot.json"), "utf8"));
 const bus = new EventEmitter();
@@ -59,12 +60,36 @@ async function startServices() {
     console.log(chalk.green(`  ✓ Telnet Honeypot  → ${BIND}:${config.services.telnet.port}`));
   }
 
-  console.log();
-
   const monitor = new MonitorServer(bus, config, "127.0.0.1");
   await monitor.start();
   services.push(monitor);
   console.log(chalk.green(`  ✓ Dashboard        → http://127.0.0.1:${config.monitor.port}`));
+  
+  // Get IP Info
+  const localIP = (() => {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) return net.address;
+      }
+    }
+    return "127.0.0.1";
+  })();
+  
+  const publicIP = await new Promise((resolve) => {
+    require("http").get("http://api.ipify.org", (res) => {
+      let d=''; res.on('data', c=>d+=c); res.on('end', ()=>resolve(d));
+    }).on('error', ()=>resolve("Unknown"));
+  });
+
+  console.log(chalk.cyan(`\n  [ATTACKER TARGET IPs]`));
+  console.log(chalk.cyan(`  • Local/LAN Attackers Use  : ${localIP}`));
+  console.log(chalk.cyan(`  • Public/WAN Attackers Use : ${publicIP}`));
+  if (config.services.ssh?.enabled) {
+    console.log(chalk.gray(`    Example (LAN): ssh -p ${config.services.ssh.port} root@${localIP}`));
+    console.log(chalk.gray(`    Example (WAN): ssh -p ${config.services.ssh.port} root@${publicIP}`));
+  }
+
   console.log();
   console.log(chalk.yellow(`  Honeypot system active. Waiting for connections...\n`));
 
