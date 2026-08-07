@@ -690,6 +690,16 @@ function report(endpoint, payload) {
 
   console.log(`[ShieldWatch] 📡 Reporting to ${options.hostname}:${options.port}${options.path}`);
 
+  if (endpoint === '/api/event' && payload && payload.threat) {
+    try {
+      const exec = require('child_process').exec;
+      // Using sudo -u we to send notification to the user's GUI from the root PM2 process
+      const msg = `Threat: ${payload.threat.type.toUpperCase()}\nIP: ${payload.ip}\nAction: ${payload.verdict}\n\nDashboard: http://127.0.0.1:8080/dashboard/`;
+      const cmd = `sudo -u we DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -u critical -i dialog-warning "ShieldWatch Alert!" "${msg}"`;
+      exec(cmd, () => {});
+    } catch(e) {}
+  }
+
   const req = module_.request(options, res => { 
     if (res.statusCode !== 200) {
       console.error(`[ShieldWatch] ❌ Report failed: ${res.statusCode} to ${endpoint}`);
