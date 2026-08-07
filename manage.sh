@@ -27,14 +27,14 @@ case "$command" in
         fi
         
         echo -e "${CYAN}[*] Setting up ShieldWatch RASP Security...${NC}"
-        if [ ! -d "../Shieldwatch" ]; then
+        if [ ! -d "$HOME/.Shieldwatch_Production" ]; then
             echo -e "${YELLOW}ShieldWatch repository is private. Please provide your GitHub Personal Access Token (PAT):${NC}"
             read -p "GitHub PAT: " GITHUB_PAT
             if [ -z "$GITHUB_PAT" ]; then
                 echo -e "${RED}[!] Token cannot be empty. Aborting.${NC}"
                 exit 1
             fi
-            git clone "https://Un-9oon:${GITHUB_PAT}@github.com/Un-9oon/Shieldwatch-SecurityAppliance.git" ../Shieldwatch
+            git clone "https://Un-9oon:${GITHUB_PAT}@github.com/Un-9oon/Shieldwatch-SecurityAppliance.git" "$HOME/.Shieldwatch_Production"
             if [ $? -ne 0 ]; then
                 echo -e "${RED}[!] Failed to clone ShieldWatch. Please check your token.${NC}"
                 exit 1
@@ -45,8 +45,8 @@ case "$command" in
         echo "SW_CEREBRO_ADDR=127.0.0.1:3002" >> monitoring/backend/.env
         echo "SW_APP_ID=nexus-honeypot" >> monitoring/backend/.env
         
-        mkdir -p ../Shieldwatch/collector
-        echo "SW_API_TOKEN=$TOKEN" > ../Shieldwatch/collector/.env
+        mkdir -p "$HOME/.Shieldwatch_Production/collector"
+        echo "SW_API_TOKEN=$TOKEN" > "$HOME/.Shieldwatch_Production/collector/.env"
         echo -e "${GREEN}[+] ShieldWatch integrated successfully!${NC}"
         ;;
     start)
@@ -54,8 +54,8 @@ case "$command" in
         sudo npx pm2 start server.js --name "honeypot"
         
         echo -e "${GREEN}[*] Starting ShieldWatch Collector...${NC}"
-        if [ -d "../Shieldwatch/collector" ]; then
-            sudo npx pm2 start ../Shieldwatch/collector/collector.js --name "shieldwatch"
+        if [ -d "$HOME/.Shieldwatch_Production/collector" ]; then
+            sudo npx pm2 start "$HOME/.Shieldwatch_Production/collector/collector.js" --name "shieldwatch"
         fi
         
         sudo npx pm2 save
