@@ -1,0 +1,103 @@
+Hit:1 https://packages.wazuh.com/4.x/apt stable InRelease
+Hit:2 https://pkg.cloudflare.com/cloudflared any InRelease
+Hit:4 http://http.kali.org/kali kali-rolling InRelease
+Hit:5 https://downloads.claude.ai/claude-desktop/apt/stable stable InRelease
+Hit:6 https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev antigravity-debian InRelease
+Hit:3 https://packagecloud.io/filips/FirefoxPWA/debian bookworm InRelease
+Ign:7 https://brave-browser-apt-release.s3.brave.com stable InRelease
+Ign:7 https://brave-browser-apt-release.s3.brave.com stable InRelease
+Ign:7 https://brave-browser-apt-release.s3.brave.com stable InRelease
+Err:7 https://brave-browser-apt-release.s3.brave.com stable InRelease
+  Something wicked happened resolving 'brave-browser-apt-release.s3.brave.com:https' (-5 - No address associated with hostname)
+  Temporary failure resolving 'brave-browser-apt-release.s3.brave.com'
+Reading package lists...
+W: Failed to fetch https://brave-browser-apt-release.s3.brave.com/dists/stable/InRelease  Temporary failure resolving 'brave-browser-apt-release.s3.brave.com'
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+Reading package lists...
+Building dependency tree...
+Reading state information...
+curl is already the newest version (8.20.0-5).
+wget is already the newest version (1.25.0-3).
+build-essential is already the newest version (12.12).
+iptables-persistent is already the newest version (1.0.24).
+Solving dependencies...
+The following packages were automatically installed and are no longer required:
+  bluez-hcidump libabsl20260107:i386 libntfs-3g89t64
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 81 not upgraded.
+Node.js is already installed
+
+changed 77 packages in 10s
+
+8 packages are looking for funding
+  run `npm fund` for details
+
+up to date, audited 122 packages in 2s
+
+26 packages are looking for funding
+  run `npm fund` for details
+
+2 vulnerabilities (1 moderate, 1 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   classic-level@1.4.1 (install: node-gyp rebuild)
+npm warn allow-scripts   cpu-features@0.0.10 (install: node-gyp rebuild)
+npm warn allow-scripts   ssh2@1.17.0 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+[31m[PM2][ERROR] [39mProcess or Namespace honeypot not found
+[31m[PM2][ERROR] [39mProcess or Namespace honeypot not found
+[32m[PM2] [39mStarting /home/we/HoneyPot/server.js in fork_mode (1 instance)
+[32m[PM2] [39mDone.
+┌────┬─────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name        │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ honeypot    │ default     │ 3.0.0   │ [7m[1mfork[22m[27m    │ 36631    │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 6.6mb    │ [1mroot[22m     │ [90mdisabled[39m │
+└────┴─────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[1m[36mhost metrics[39m[22m | [1mcpu[22m: [32m4.2%[39m | [1mram usage[22m: [32m34.5%[39m | [1mlo[22m: ⇓ [32m0.001mb/s[39m ⇑ [32m0.001mb/s[39m | [1mwlan0[22m: ⇓ [32m0.002mb/s[39m ⇑ [32m0.001mb/s[39m | [1mdisk[22m: ⇓ [32m0.004mb/s[39m ⇑ [32m0.482mb/s[39m [90m/[39m [32m71.13%[39m [90m/snap/bare/5[39m [1m[31m100%[39m[22m [90m/snap/snapd/27591[39m [1m[31m100%[39m[22m [90m/snap/mesa-2404/1165[39m [1m[31m100%[39m[22m [90m/snap/core24/1643[39m [1m[31m100%[39m[22m [90m/snap/snapd/27406[39m [1m[31m100%[39m[22m [90m/snap/obsidian/62[39m [1m[31m100%[39m[22m [90m/snap/core18/2999[39m [1m[31m100%[39m[22m [90m/snap/core20/2866[39m [1m[31m100%[39m[22m [90m/snap/gnome-46-2404/164[39m [1m[31m100%[39m[22m [90m/snap/core20/2769[39m [1m[31m100%[39m[22m [90m/snap/obsidian/65[39m [1m[31m100%[39m[22m [90m/snap/gnome-3-28-1804/198[39m [1m[31m100%[39m[22m [90m/snap/gtk-common-themes/1535[39m [1m[31m100%[39m[22m [90m/snap/gnome-46-2404/153[39m [1m[31m100%[39m[22m [90m/snap/mesa-2404/1839[39m [1m[31m100%[39m[22m |
+[32m[PM2] [39mInit System found: [1msystemd[22m
+[1mPlatform[22m systemd
+[1mTemplate[22m
+[Unit]
+Description=PM2 process manager
+Documentation=https://pm2.keymetrics.io/
+After=network.target
+
+[Service]
+Type=forking
+User=root
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+Environment=PATH=/usr/local/bin:/home/we/HoneyPot/node_modules/.bin:/home/we/node_modules/.bin:/home/node_modules/.bin:/node_modules/.bin:/usr/share/nodejs/@npmcli/run-script/lib/node-gyp-bin:/usr/sbin:/usr/bin:/sbin:/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=PM2_HOME=/root/.pm2
+PIDFile=/root/.pm2/pm2.pid
+Restart=on-failure
+
+ExecStart=/usr/local/lib/node_modules/pm2/bin/pm2 resurrect
+ExecReload=/usr/local/lib/node_modules/pm2/bin/pm2 reload all
+ExecStop=/usr/local/lib/node_modules/pm2/bin/pm2 kill
+
+[Install]
+WantedBy=multi-user.target
+
+[1mTarget path[22m
+/etc/systemd/system/pm2-root.service
+[1mCommand list[22m
+[ 'systemctl enable pm2-root' ]
+[32m[PM2] [39mWriting init configuration in /etc/systemd/system/pm2-root.service
+[32m[PM2] [39mMaking script booting at startup...
+[32m[PM2] [39m[-] Executing: [1msystemctl enable pm2-root[22m...
+[32m[PM2] [39m[1m[v] Command successfully executed.[22m
+[1m[34m+---------------------------------------+[39m[22m
+[1m[34m[32m[PM2] [34mFreeze a process list on reboot via:[39m[22m
+[1m$ pm2 save[22m
+
+[1m[34m[32m[PM2] [34mRemove init script via:[39m[22m
+[1m$ pm2 unstartup systemd[22m
+[32m[PM2] [39mSaving current process list...
+[32m[PM2] [39mSuccessfully saved in /root/.pm2/dump.pm2
