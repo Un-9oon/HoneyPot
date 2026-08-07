@@ -720,7 +720,7 @@ function updateThreatBanner(){
   document.getElementById("t-creds").textContent=S.creds.length;
 }
 
-let prevCount=0;
+var prevCount=0;
 function updateStats(){
   const el=document.getElementById("s-attacks");
   const newCount=S.attacks.length;
