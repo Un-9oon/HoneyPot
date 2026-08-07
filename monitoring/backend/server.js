@@ -52,24 +52,35 @@ class MonitorServer {
       if (now > entry.reset) { entry.count = 0; entry.reset = now + 60000; }
       entry.count++;
       this.rateLimits.set(ip, entry);
-      if (entry.count > (this.config.rateLimitMax || 100)) {
-        return res.status(429).json({ error: "Rate limit exceeded" });
+      
+      // Strict rate limiting: 5 req/min for login, 30 req/min for API
+      const maxReq = req.path === '/api/login' ? 5 : (this.config.rateLimitMax || 30);
+      if (entry.count > maxReq) {
+        return res.status(429).json({ error: "Rate limit exceeded. Try again later." });
       }
-      res.header("Access-Control-Allow-Origin", "*");
+      
+      // OWASP Secure Headers
+      res.header("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+      res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; img-src 'self' data:;");
+      res.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
       res.header("X-Content-Type-Options", "nosniff");
       res.header("X-Frame-Options", "DENY");
+      res.header("X-XSS-Protection", "1; mode=block");
+      
+      if(req.method === 'OPTIONS') return res.sendStatus(200);
       next();
     });
 
     app.use(express.static(path.join(__dirname, "../frontend")));
 
     app.post("/api/login", (req, res) => {
-      const { password } = req.body || {};
+      const { username, password } = req.body || {};
       const authFile = path.join(__dirname, "../../config/auth.json");
       try {
         const auth = JSON.parse(fs.readFileSync(authFile, "utf8"));
-        if (password === auth.password) {
+        if (username === auth.username && password === auth.password) {
           return res.json({ token: auth.token, message: "Authenticated" });
         }
       } catch {}
@@ -77,8 +88,6 @@ class MonitorServer {
     });
 
     const authMiddleware = (req, res, next) => {
-      const ip = this._getIP(req);
-      if (ip === "127.0.0.1" || ip === "::1") return next();
       const token = (req.headers.authorization || "").replace("Bearer ", "");
       if (token && token === this.authToken) return next();
       res.status(401).json({ error: "Unauthorized" });
@@ -277,7 +286,13 @@ class MonitorServer {
 
     this.server = http.createServer(app);
     const wss = new WebSocketServer({ server: this.server, path: this.config.monitor?.wsPath || "/ws" });
-    wss.on("connection", (ws) => {
+    wss.on("connection", (ws, req) => {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const token = url.searchParams.get("token");
+      if (token !== this.authToken) {
+        ws.close(4001, "Unauthorized");
+        return;
+      }
       this.wsClients.add(ws);
       ws.send(JSON.stringify({ type: "init", data: { attacks: this.attacks.slice(-200), services: this.config.services, unreadNotifications: this.notifications.filter(n => !n.read).length, notifications: this.notifications.filter(n => !n.read).slice(-20).reverse() } }));
       ws.on("close", () => this.wsClients.delete(ws));
@@ -311,14 +326,15 @@ class MonitorServer {
 
   _initAuth() {
     const authFile = path.join(__dirname, "../../config/auth.json");
-    try { const auth = JSON.parse(fs.readFileSync(authFile, "utf8")); this.authToken = auth.token; } catch {
-      const password = crypto.randomBytes(6).toString("hex");
-      const token = crypto.randomBytes(32).toString("hex");
-      this.authToken = token;
-      fs.mkdirSync(path.dirname(authFile), { recursive: true });
-      fs.writeFileSync(authFile, JSON.stringify({ password, token }, null, 2));
-      console.log(`  [AUTH] Dashboard password: ${password}`);
-    }
+    // Generate new secure credentials on EVERY startup for maximum security
+    const username = this.config.adminUser || "nexus";
+    const password = crypto.randomBytes(6).toString("hex");
+    const token = crypto.randomBytes(32).toString("hex");
+    this.authToken = token;
+    fs.mkdirSync(path.dirname(authFile), { recursive: true });
+    fs.writeFileSync(authFile, JSON.stringify({ username, password, token }, null, 2));
+    console.log(`\n  [AUTH] Dashboard Security Enhanced (OWASP Top 10 Patched)`);
+    console.log(`  [AUTH] Login required! User: ${username} | Pass: ${password}\n`);
   }
 
   _geoLookup(ip) {

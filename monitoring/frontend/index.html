@@ -601,7 +601,47 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
   </div>
 </div>
 
+<div class="modal-overlay" id="login-overlay" style="z-index:9999;background:var(--bg)">
+  <div class="glass" style="padding:40px;border-radius:var(--r);width:360px;text-align:center;box-shadow:0 0 50px rgba(255,58,84,0.1)">
+    <div style="font-size:12px;font-weight:900;letter-spacing:4px;color:var(--red);margin-bottom:24px">HONEYPOT SECURE LOGIN</div>
+    <input type="text" id="login-user" placeholder="Username" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:6px;margin-bottom:12px;outline:none">
+    <input type="password" id="login-pass" placeholder="Password" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:6px;margin-bottom:20px;outline:none">
+    <button class="btn btn-red" style="width:100%;padding:12px" onclick="doLogin()">ACCESS DASHBOARD</button>
+    <div id="login-err" style="color:var(--red);font-size:11px;margin-top:14px;display:none">Invalid credentials</div>
+  </div>
+</div>
+
 <script>
+const originalFetch = window.fetch;
+window.fetch = async function() {
+  let [resource, config] = arguments;
+  if(!config) config = {};
+  if(!config.headers) config.headers = {};
+  config.headers['Authorization'] = 'Bearer ' + (localStorage.getItem('hp_token')||'');
+  const response = await originalFetch(resource, config);
+  if(response.status === 401 && !resource.includes('/api/login')) {
+    document.getElementById('login-overlay').style.display='flex';
+  }
+  return response;
+};
+async function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  try {
+    const res = await originalFetch(API+"/api/login", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({username:u, password:p})
+    });
+    const data = await res.json();
+    if(res.ok && data.token) {
+      localStorage.setItem('hp_token', data.token);
+      document.getElementById('login-overlay').style.display='none';
+      init();
+    } else {
+      document.getElementById('login-err').style.display='block';
+    }
+  } catch(e) { document.getElementById('login-err').style.display='block'; }
+}
 // Particles
 (function(){
   const c=document.getElementById("particles");
@@ -999,7 +1039,8 @@ async function resetSystem(){
 function playAlertSound(){if(!S.soundEnabled)return;try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;o.type="sine";g.gain.setValueAtTime(.08,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.25);o.start();o.stop(c.currentTime+.25)}catch{}}
 
 function connectWS(){
-  const ws=new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}/ws`);
+  const token = localStorage.getItem('hp_token') || '';
+  const ws=new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}/ws?token=${token}`);
   ws.onopen=()=>{document.getElementById("conn-txt").textContent="LIVE"};
   ws.onmessage=e=>{
     const msg=JSON.parse(e.data);
@@ -1026,7 +1067,10 @@ function connectWS(){
   ws.onclose=()=>{document.getElementById("conn-txt").textContent="RECONNECTING";setTimeout(connectWS,3000)};
   ws.onerror=()=>{};
 }
-async function init(){try{const r=await fetch(API+"/api/status");const s=await r.json();S.services=s.services||{};S.uptime=s.uptime;updateStats()}catch(e){console.warn("API:",e.message)}connectWS()}
+async function init(){
+  if(!localStorage.getItem('hp_token')){ document.getElementById('login-overlay').style.display='flex'; return; }
+  try{const r=await fetch(API+"/api/status");if(r.ok){const s=await r.json();S.services=s.services||{};S.uptime=s.uptime;updateStats();connectWS();}}catch(e){console.warn("API:",e.message)}
+}
 init();
 </script>
 </body>
