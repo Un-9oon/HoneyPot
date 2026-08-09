@@ -17,6 +17,8 @@ function ensureHostKey() {
   }
 }
 
+const pcapEngine = require("../monitoring/backend/pcap-engine");
+
 class SSHHoneypot {
   constructor(bus, cfg, bind) {
     this.bus = bus;
@@ -35,11 +37,14 @@ class SSHHoneypot {
       const srcPort = socket.remotePort || 0;
       const sessionId = crypto.randomUUID();
       const startTime = Date.now();
+      const pcapId = pcapEngine.createStream("ssh", srcIP, srcPort, this.port);
       const buffer = [];
 
-      this.sessions.set(sessionId, { srcIP, srcPort, startTime, data: buffer, socket });
+      this.sessions.set(sessionId, { srcIP, srcPort, startTime, data: buffer, socket, pcapId });
 
-      socket.write(this.banner + "\r\n");
+      const initialBanner = this.banner + "\r\n";
+      socket.write(initialBanner);
+      pcapEngine.recordPacket(pcapId, "S_TO_C", initialBanner, "[BANNER] SSH Version Exchange Banner");
 
       this.bus.emit("connection", {
         service: "ssh", srcIP, srcPort, sessionId,
@@ -47,13 +52,18 @@ class SSHHoneypot {
       });
 
       socket.on("data", (data) => {
+        pcapEngine.recordPacket(pcapId, "C_TO_S", data);
         const raw = data.toString("utf8", 0, 512);
         buffer.push(raw);
 
-        if (raw.startsWith("SSH-")) return;
+        if (raw.startsWith("SSH-")) {
+          pcapEngine.recordPacket(pcapId, "C_TO_S", raw, "[SSH] Client Version Exchange");
+          return;
+        }
 
         const creds = this._extractCredentials(raw);
         if (creds) {
+          pcapEngine.markStatus(pcapId, "SUCCESSFUL", creds.username);
           this.bus.emit("attack", {
             service: "ssh", type: "login_attempt",
             srcIP, srcPort, sessionId,
@@ -72,8 +82,14 @@ class SSHHoneypot {
         }
       });
 
-      socket.on("error", () => {});
+      socket.on("error", () => {
+        pcapEngine.markStatus(pcapId, "FAILED");
+      });
       socket.on("close", () => {
+        const pObj = pcapEngine.getStreamDetail(pcapId);
+        if (pObj && pObj.status === "ACTIVE") {
+          pcapEngine.markStatus(pcapId, pObj.authCaptured ? "SUCCESSFUL" : "FAILED");
+        }
         const duration = ((Date.now() - startTime) / 1000).toFixed(1);
         this.bus.emit("session_end", {
           service: "ssh", srcIP, srcPort, sessionId,

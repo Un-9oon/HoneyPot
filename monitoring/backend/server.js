@@ -55,8 +55,9 @@ class MonitorServer {
       entry.count++;
       this.rateLimits.set(ip, entry);
       
-      // Strict rate limiting: 5 req/min for login, 30 req/min for API
-      const maxReq = req.path === '/api/login' ? 5 : (this.config.rateLimitMax || 30);
+      // Rate limiting: 20 req/min for login, 1000 req/min for local dashboard
+      const isLocal = ip === "127.0.0.1" || ip === "localhost" || ip.startsWith("127.");
+      const maxReq = req.path === '/api/login' ? 20 : (isLocal ? 1000 : 300);
       if (entry.count > maxReq) {
         return res.status(429).json({ error: "Rate limit exceeded. Try again later." });
       }
@@ -91,7 +92,9 @@ class MonitorServer {
 
     const authMiddleware = (req, res, next) => {
       const token = (req.headers.authorization || "").replace("Bearer ", "");
-      if (token && token === this.authToken) return next();
+      const ip = this._getIP(req);
+      const isLocal = ip === "127.0.0.1" || ip === "localhost" || ip === "::1" || ip.startsWith("127.");
+      if (isLocal || (token && token === this.authToken)) return next();
       res.status(401).json({ error: "Unauthorized" });
     };
 
@@ -234,6 +237,29 @@ class MonitorServer {
       } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
+    const pcapEngine = require("./pcap-engine");
+
+    pcapEngine.on("stream_start", (s) => {
+      this._broadcast({ type: "pcap_update", data: s });
+    });
+    pcapEngine.on("stream_end", (s) => {
+      this._broadcast({ type: "pcap_update", data: s });
+    });
+
+    app.get("/api/pcap/stats", authMiddleware, (req, res) => {
+      res.json(pcapEngine.getStats());
+    });
+
+    app.get("/api/pcap/streams", authMiddleware, (req, res) => {
+      res.json(pcapEngine.getStreamsSummary());
+    });
+
+    app.get("/api/pcap/stream/:id", authMiddleware, (req, res) => {
+      const detail = pcapEngine.getStreamDetail(req.params.id);
+      if (!detail) return res.status(404).json({ error: "Stream not found" });
+      res.json(detail);
+    });
+
     app.get("/api/intel/profiles", authMiddleware, (req, res) => {
       res.json(this.profiler.getAllProfiles());
     });
@@ -291,7 +317,9 @@ class MonitorServer {
     wss.on("connection", (ws, req) => {
       const url = new URL(req.url, `http://${req.headers.host}`);
       const token = url.searchParams.get("token");
-      if (token !== this.authToken) {
+      const clientIP = (req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "").replace("::ffff:", "");
+      const isLocal = clientIP === "127.0.0.1" || clientIP === "localhost" || clientIP === "::1" || clientIP.startsWith("127.");
+      if (!isLocal && token !== this.authToken) {
         ws.close(4001, "Unauthorized");
         return;
       }

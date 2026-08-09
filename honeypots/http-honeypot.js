@@ -152,6 +152,8 @@ const PAGES = {
   "/pma": PHPMYADMIN_PAGE,
 };
 
+const pcapEngine = require("../monitoring/backend/pcap-engine");
+
 class HTTPHoneypot {
   constructor(bus, cfg, bind) {
     this.bus = bus;
@@ -167,9 +169,13 @@ class HTTPHoneypot {
       const srcPort = req.socket.remotePort || 0;
       const sessionId = crypto.randomUUID();
       const urlPath = req.url.split("?")[0];
+      const pcapId = pcapEngine.createStream("http", srcIP, srcPort, this.port);
 
       res.setHeader("Server", this.serverHeader);
       res.setHeader("X-Powered-By", "PHP/8.1.2");
+
+      const reqStr = `${req.method} ${req.url} HTTP/${req.httpVersion}\r\nHost: ${req.headers.host || "127.0.0.1"}\r\nUser-Agent: ${req.headers["user-agent"] || ""}\r\n\r\n`;
+      pcapEngine.recordPacket(pcapId, "C_TO_S", reqStr, `[HTTP REQ] ${req.method} ${req.url}`);
 
       const headersCopy = { ...req.headers };
       delete headersCopy.cookie;
@@ -232,6 +238,16 @@ class HTTPHoneypot {
         });
         return;
       }
+
+      const origEnd = res.end.bind(res);
+      res.end = (chunk, encoding, callback) => {
+        if (chunk) {
+          const respStr = `HTTP/1.1 ${res.statusCode} ${res.statusMessage || "OK"}\r\nServer: ${this.serverHeader}\r\nContent-Type: ${res.getHeader("Content-Type") || "text/html"}\r\n\r\n` + chunk.toString().substring(0, 1024);
+          pcapEngine.recordPacket(pcapId, "S_TO_C", respStr, `[HTTP RESP] ${res.statusCode}`);
+        }
+        pcapEngine.markStatus(pcapId, (res.statusCode >= 200 && res.statusCode < 400) ? "SUCCESSFUL" : "FAILED");
+        return origEnd(chunk, encoding, callback);
+      };
 
       const sensitive = SENSITIVE_PATHS[urlPath];
       if (sensitive) {

@@ -1,6 +1,8 @@
 const net = require("net");
 const crypto = require("crypto");
 
+const pcapEngine = require("../monitoring/backend/pcap-engine");
+
 class FTPHoneypot {
   constructor(bus, cfg, bind) {
     this.bus = bus;
@@ -15,12 +17,16 @@ class FTPHoneypot {
       const srcIP = socket.remoteAddress?.replace("::ffff:", "") || "unknown";
       const srcPort = socket.remotePort || 0;
       const sessionId = crypto.randomUUID();
+      const pcapId = pcapEngine.createStream("ftp", srcIP, srcPort, this.port);
+
       let currentUser = "";
       let loginAttempts = 0;
       let loggedIn = false;
       const commands = [];
 
-      socket.write(this.banner + "\r\n");
+      const initialBanner = this.banner + "\r\n";
+      socket.write(initialBanner);
+      pcapEngine.recordPacket(pcapId, "S_TO_C", initialBanner, "[BANNER] FTP Welcome Banner");
 
       this.bus.emit("connection", {
         service: "ftp", srcIP, srcPort, sessionId,
@@ -28,6 +34,7 @@ class FTPHoneypot {
       });
 
       socket.on("data", (data) => {
+        pcapEngine.recordPacket(pcapId, "C_TO_S", data);
         const lines = data.toString().trim().split("\r\n");
         for (const line of lines) {
           const [cmd, ...args] = line.split(" ");
@@ -123,8 +130,11 @@ class FTPHoneypot {
         }
       });
 
-      socket.on("error", () => {});
+      socket.on("error", () => {
+        pcapEngine.markStatus(pcapId, "FAILED");
+      });
       socket.on("close", () => {
+        pcapEngine.markStatus(pcapId, loggedIn ? "SUCCESSFUL" : "FAILED", currentUser);
         if (commands.length > 0) {
           this.bus.emit("session_end", {
             service: "ftp", srcIP, srcPort, sessionId,

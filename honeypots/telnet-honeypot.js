@@ -1,6 +1,8 @@
 const net = require("net");
 const crypto = require("crypto");
 
+const pcapEngine = require("../monitoring/backend/pcap-engine");
+
 class TelnetHoneypot {
   constructor(bus, cfg, bind) {
     this.bus = bus;
@@ -14,13 +16,17 @@ class TelnetHoneypot {
       const srcIP = socket.remoteAddress?.replace("::ffff:", "") || "unknown";
       const srcPort = socket.remotePort || 0;
       const sessionId = crypto.randomUUID();
+      const pcapId = pcapEngine.createStream("telnet", srcIP, srcPort, this.port);
+
       let state = "login";
       let username = "";
       let loginAttempts = 0;
       const commands = [];
       const sessionLog = [];
 
-      socket.write("\r\nUbuntu 22.04.4 LTS\r\nlogin: ");
+      const initialBanner = "\r\nUbuntu 22.04.4 LTS\r\nlogin: ";
+      socket.write(initialBanner);
+      pcapEngine.recordPacket(pcapId, "S_TO_C", initialBanner, "[BANNER] Server Welcome Banner");
 
       this.bus.emit("connection", {
         service: "telnet", srcIP, srcPort, sessionId,
@@ -28,13 +34,16 @@ class TelnetHoneypot {
       });
 
       socket.on("data", (data) => {
+        pcapEngine.recordPacket(pcapId, "C_TO_S", data);
         const input = data.toString().replace(/[\r\n]+$/, "").replace(/\xff[\xfb-\xfe]./g, "");
         if (!input) return;
         sessionLog.push(input);
 
         if (state === "login") {
           username = input;
-          socket.write("Password: ");
+          const prompt = "Password: ";
+          socket.write(prompt);
+          pcapEngine.recordPacket(pcapId, "S_TO_C", prompt, "[PROMPT] Password Prompt");
           state = "password";
         } else if (state === "password") {
           loginAttempts++;
@@ -47,10 +56,16 @@ class TelnetHoneypot {
           });
 
           if (loginAttempts >= 3) {
-            socket.write(`\r\nLast login: ${new Date(Date.now() - 3600000).toString()}\r\n$ `);
+            const shellBanner = `\r\nLast login: ${new Date(Date.now() - 3600000).toString()}\r\n$ `;
+            socket.write(shellBanner);
+            pcapEngine.recordPacket(pcapId, "S_TO_C", shellBanner, "[SHELL] Shell Granted");
+            pcapEngine.markStatus(pcapId, "SUCCESSFUL", username);
             state = "shell";
           } else {
-            socket.write("\r\nLogin incorrect\r\nlogin: ");
+            const failMsg = "\r\nLogin incorrect\r\nlogin: ";
+            socket.write(failMsg);
+            pcapEngine.recordPacket(pcapId, "S_TO_C", failMsg, "[AUTH] Login Failed Prompt");
+            pcapEngine.markStatus(pcapId, "FAILED", username);
             state = "login";
             username = "";
           }
@@ -66,17 +81,22 @@ class TelnetHoneypot {
 
           if (input === "exit" || input === "quit" || input === "logout") {
             socket.write("logout\r\n");
+            pcapEngine.recordPacket(pcapId, "S_TO_C", "logout\r\n", "[CLOSE] Logout");
             socket.end();
             return;
           }
 
-          const resp = this._fakeResponse(input);
-          socket.write(resp + "\r\n$ ");
+          const resp = this._fakeResponse(input) + "\r\n$ ";
+          socket.write(resp);
+          pcapEngine.recordPacket(pcapId, "S_TO_C", resp, `[RESP] Command: ${input}`);
         }
       });
 
-      socket.on("error", () => {});
+      socket.on("error", () => {
+        pcapEngine.markStatus(pcapId, "FAILED");
+      });
       socket.on("close", () => {
+        pcapEngine.markStatus(pcapId, loginAttempts >= 3 ? "SUCCESSFUL" : "FAILED");
         this.bus.emit("session_end", {
           service: "telnet", srcIP, srcPort, sessionId,
           commandCount: commands.length,
