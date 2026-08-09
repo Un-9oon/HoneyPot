@@ -45,9 +45,7 @@ class MonitorServer {
     const app = express();
     app.use(express.json());
     
-    // ShieldWatch RASP Integration
-    const shieldwatch = require('./shieldwatch-sensor');
-    app.use(shieldwatch.middleware);
+
 
     app.use((req, res, next) => {
       const ip = this._getIP(req);
