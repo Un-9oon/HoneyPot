@@ -55,7 +55,7 @@ case "$command" in
         if [ -f "config/auth.json" ]; then
             USER=$(grep '"username"' config/auth.json | cut -d'"' -f4)
             PASS=$(grep '"password"' config/auth.json | cut -d'"' -f4)
-            echo -e "${GREEN}Honeypot Dashboard  : http://127.0.0.1:3002${NC}"
+            echo -e "${GREEN}Honeypot Dashboard  : http://127.0.0.1:3000${NC}"
             echo -e "${GREEN}Honeypot Username   : ${USER}${NC}"
             echo -e "${GREEN}Honeypot Password   : ${PASS}${NC}"
             echo -e "${CYAN}------------------------------------------------${NC}"
@@ -64,7 +64,7 @@ case "$command" in
             
             if command -v xdg-open &> /dev/null; then
                 echo -e "${GREEN}[*] Opening Honeypot dashboard in your default browser...${NC}"
-                xdg-open "http://127.0.0.1:3002" &> /dev/null &
+                xdg-open "http://127.0.0.1:3000" &> /dev/null &
             fi
         else
             echo -e "${RED}Dashboard credentials not found. Please run './manage.sh start' first.${NC}"
