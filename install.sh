@@ -86,6 +86,14 @@ fi
 draw_progress 80 "Installing NPM Project Dependencies..."
 npm install >> "$LOG_FILE" 2>&1
 
+# 6.5 Deploy Enterprise Docker Services (ClickHouse & Suricata)
+draw_progress 85 "Deploying Enterprise Services (ClickHouse & Suricata IDS)..."
+if command -v docker-compose &> /dev/null; then
+    docker-compose up -d >> "$LOG_FILE" 2>&1
+else
+    echo -e "\n${YELLOW}[!] Warning: docker-compose not found. Skipping Enterprise Services deployment.${NC}"
+fi
+
 # 7. Start the Honeypot with PM2
 draw_progress 90 "Launching Honeypot engine via PM2..."
 npx pm2 stop honeypot >> "$LOG_FILE" 2>&1 || true
