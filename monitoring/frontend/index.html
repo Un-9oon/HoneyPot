@@ -717,11 +717,24 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
       </div>
 
       <div style="display:flex;gap:10px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px">
-        <button class="btn" id="btn-tab-flow" onclick="switchPCAPTab('flow')" style="background:var(--glass-strong);color:var(--text)">Stream Flow Transcript</button>
-        <button class="btn" id="btn-tab-hex" onclick="switchPCAPTab('hex')">Hex Dump Inspector</button>
+        <button class="btn" id="btn-tab-packets" onclick="switchPCAPTab('packets')" style="background:var(--glass-strong);color:var(--text)">Packet List</button>
+        <button class="btn" id="btn-tab-flow" onclick="switchPCAPTab('flow')">Stream Transcript</button>
+        <button class="btn" id="btn-tab-hex" onclick="switchPCAPTab('hex')">Hex Dump</button>
       </div>
 
-      <div id="pcap-tab-flow" style="max-height:420px;overflow-y:auto;background:#080507;padding:14px;border-radius:var(--r-xs);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;border:1px solid var(--border)">
+      <div id="pcap-tab-packets">
+        <div style="max-height:200px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border)">
+          <table class="report-table" style="margin:0;width:100%">
+            <thead style="position:sticky;top:0;z-index:2"><tr><th>No.</th><th>Time</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Length</th><th>Info</th></tr></thead>
+            <tbody id="pcap-packet-list-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pcap-packet-details" style="margin-top:12px;padding:12px;background:#080507;border:1px solid var(--border);border-radius:var(--r-xs);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);min-height:160px;max-height:200px;overflow-y:auto">
+          Select a packet to view its protocol layers.
+        </div>
+      </div>
+
+      <div id="pcap-tab-flow" style="display:none;max-height:420px;overflow-y:auto;background:#080507;padding:14px;border-radius:var(--r-xs);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;border:1px solid var(--border)">
       </div>
 
       <div id="pcap-tab-hex" style="display:none;max-height:420px;overflow-y:auto;background:#060305;padding:14px;border-radius:var(--r-xs);font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--green);white-space:pre;border:1px solid var(--border)">
@@ -1314,6 +1327,23 @@ async function openPCAPStreamModal(streamId) {
     document.getElementById("pm-status").textContent = detail.status;
     document.getElementById("pm-status").style.color = detail.status === "SUCCESSFUL" ? "var(--green)" : "var(--red)";
 
+    // Render Packet List
+    const pTbody = document.getElementById("pcap-packet-list-tbody");
+    pTbody.innerHTML = detail.packets.map(p => {
+      const src = p.direction === "C_TO_S" ? `${detail.srcIP}:${detail.srcPort}` : "Server";
+      const dst = p.direction === "C_TO_S" ? "Server" : `${detail.srcIP}:${detail.srcPort}`;
+      return `<tr style="cursor:pointer" onclick="showPacketDetail(${p.index})">
+        <td class="mono">${p.index}</td>
+        <td class="mono">${new Date(p.timestamp).toLocaleTimeString("en", {hour12:false})}</td>
+        <td class="mono" style="color:var(--cyan)">${src}</td>
+        <td class="mono" style="color:var(--green)">${dst}</td>
+        <td>${detail.service.toUpperCase()}</td>
+        <td class="mono">${p.len}</td>
+        <td style="color:var(--yellow)">${esc(p.info||"")}</td>
+      </tr>`;
+    }).join("");
+    document.getElementById("pcap-packet-details").innerHTML = "Select a packet to view its protocol layers.";
+
     // Render Transcript Flow
     const flowEl = document.getElementById("pcap-tab-flow");
     flowEl.innerHTML = detail.packets.map(p => {
@@ -1334,34 +1364,52 @@ async function openPCAPStreamModal(streamId) {
     const hexEl = document.getElementById("pcap-tab-hex");
     hexEl.textContent = detail.packets.map(p => `=== Packet #${p.index} | ${p.direction} | ${p.info} ===\n${p.hex}\n`).join("\n");
 
-    switchPCAPTab("flow");
+    switchPCAPTab("packets");
     pcapModalOverlay.classList.add("open");
   } catch (err) {
     alert("Error opening stream: " + err.message);
   }
 }
 
-function switchPCAPTab(tab) {
-  const flowEl = document.getElementById("pcap-tab-flow");
-  const hexEl = document.getElementById("pcap-tab-hex");
-  const btnFlow = document.getElementById("btn-tab-flow");
-  const btnHex = document.getElementById("btn-tab-hex");
+function showPacketDetail(index) {
+  if(!activePCAPStream) return;
+  const p = activePCAPStream.packets.find(x => x.index === index);
+  if(!p) return;
+  
+  const src = p.direction === "C_TO_S" ? `${activePCAPStream.srcIP}:${activePCAPStream.srcPort}` : "Server";
+  const dst = p.direction === "C_TO_S" ? "Server" : `${activePCAPStream.srcIP}:${activePCAPStream.srcPort}`;
+  const dirHex = p.direction === "C_TO_S" ? "0x0000 (0)" : "0x0001 (1)";
 
-  if (tab === "flow") {
-    flowEl.style.display = "block";
-    hexEl.style.display = "none";
-    btnFlow.style.background = "var(--glass-strong)";
-    btnFlow.style.color = "var(--text)";
-    btnHex.style.background = "var(--glass)";
-    btnHex.style.color = "var(--text-dim)";
-  } else {
-    flowEl.style.display = "none";
-    hexEl.style.display = "block";
-    btnHex.style.background = "var(--glass-strong)";
-    btnHex.style.color = "var(--text)";
-    btnFlow.style.background = "var(--glass)";
-    btnFlow.style.color = "var(--text-dim)";
+  let html = `
+    <div style="margin-bottom:8px"><span style="color:#fff;font-weight:700">▶ Frame ${p.index}:</span> ${p.len} bytes on wire (${p.len * 8} bits), ${p.len} bytes captured</div>
+    <div style="margin-bottom:8px;margin-left:12px"><span style="color:#fff;font-weight:700">▶ Ethernet II, Src:</span> 00:00:00:00:00:00, <span style="color:#fff;font-weight:700">Dst:</span> ff:ff:ff:ff:ff:ff</div>
+    <div style="margin-bottom:8px;margin-left:12px"><span style="color:#fff;font-weight:700">▶ Internet Protocol Version 4, Src:</span> ${src}, <span style="color:#fff;font-weight:700">Dst:</span> ${dst}</div>
+    <div style="margin-bottom:8px;margin-left:12px"><span style="color:#fff;font-weight:700">▶ Transmission Control Protocol, Src Port:</span> ${src.split(":")[1]||activePCAPStream.service}, <span style="color:#fff;font-weight:700">Dst Port:</span> ${dst.split(":")[1]||activePCAPStream.service}, <span style="color:#fff;font-weight:700">Seq:</span> 0, <span style="color:#fff;font-weight:700">Ack:</span> 1</div>
+    <div style="margin-bottom:8px;margin-left:24px;color:var(--text-muted)">[Direction: ${dirHex}]</div>
+  `;
+  if(p.ascii && p.ascii.trim().length > 0) {
+    html += `<div style="margin-bottom:8px;margin-left:12px"><span style="color:#fff;font-weight:700">▶ ${activePCAPStream.service.toUpperCase()} Protocol</span></div>
+      <div style="margin-left:24px;color:var(--green);white-space:pre-wrap">${esc(p.ascii)}</div>`;
   }
+  document.getElementById("pcap-packet-details").innerHTML = html;
+}
+
+function switchPCAPTab(tab) {
+  const tabs = ["packets", "flow", "hex"];
+  tabs.forEach(t => {
+    const el = document.getElementById("pcap-tab-" + t);
+    if(el) el.style.display = (t === tab) ? "block" : "none";
+    const btn = document.getElementById("btn-tab-" + t);
+    if(btn) {
+      if(t === tab) {
+        btn.style.background = "var(--glass-strong)";
+        btn.style.color = "var(--text)";
+      } else {
+        btn.style.background = "var(--glass)";
+        btn.style.color = "var(--text-dim)";
+      }
+    }
+  });
 }
 
 function downloadStreamJSON() {
