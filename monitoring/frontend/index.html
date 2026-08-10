@@ -919,6 +919,8 @@ function updateStats(){
   document.getElementById("nb-creds").textContent=S.creds.length;
   document.getElementById("cred-total").textContent=S.creds.length;
   updateThreatBanner();renderMiniSvc();renderTopAttackers();renderTypeChart();renderSvcChart();
+  const uptimeEl = document.getElementById("set-uptime");
+  if(uptimeEl) uptimeEl.textContent = formatUptime(S.uptime||0);
 }
 
 function renderMiniSvc(){
@@ -1158,8 +1160,39 @@ function renderNotifPage(){
   row.innerHTML=`<span class="feed-time mono">${new Date(n.timestamp).toLocaleTimeString("en",{hour12:false})}</span><span class="feed-svc svc-${n.service}">${n.service}</span><span class="feed-detail"><span class="feed-sev sev-${n.severity}">${n.severity}</span> ${esc(n.title)}</span><span></span><span class="feed-ip mono">${n.srcIP}</span>`;
   row.onclick=()=>{const a=S.attacks.find(x=>x.id===n.attackId);if(a)showAttackDetail(a)};el.appendChild(row)});
 }
+function formatUptime(sec) {
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = Math.floor(sec%60);
+  return `${h}h ${m}m ${s}s`;
+}
+
 function renderSettings(){
-  document.getElementById("set-list").innerHTML=[["Bind Address","All services bound to",location.hostname],["SSH Honeypot","Fake OpenSSH server","Port "+(S.services.ssh?.port||2222)],["HTTP Honeypot","Web panels + sensitive file traps","Port "+(S.services.http?.port||8080)],["FTP Honeypot","Fake ProFTPD server","Port "+(S.services.ftp?.port||2121)],["Telnet Honeypot","Interactive fake shell simulator","Port "+(S.services.telnet?.port||2323)],["Dashboard","Monitoring UI + REST API","Port "+(location.port||3000)],["Storage","Persistent attack database","LevelDB"],["AI Engine","Anomaly detection model","Isolation Forest"],["GeoIP","Attacker geolocation","MaxMind GeoLite2"],["Auth","API authentication","Token-based"],["Notifications","Alert system","Desktop + Dashboard"],["Uptime","System runtime",Math.floor(S.uptime||0)+"s"]].map(([l,d,v])=>`<div class="set-row"><div><div class="set-label">${l}</div><div class="set-desc">${d}</div></div><div class="set-val mono">${v}</div></div>`).join("");
+  document.getElementById("set-list").innerHTML=[
+    ["Sound Alerts", "Play sound on high-severity attacks", `<label class="toggle" style="display:inline-block;position:relative;width:34px;height:18px"><input type="checkbox" ${S.soundEnabled?'checked':''} onchange="S.soundEnabled=this.checked" style="opacity:0;width:0;height:0"><span style="position:absolute;cursor:pointer;inset:0;background:var(--glass-strong);border-radius:20px;transition:.4s;border:1px solid var(--border)"><span style="position:absolute;content:'';height:12px;width:12px;left:2px;bottom:2px;background:var(--text-dim);transition:.4s;border-radius:50%" class="slider-ball"></span></span></label>`],
+    ["SSH Honeypot","Fake OpenSSH server","Port "+(S.services.ssh?.port||2225)],
+    ["HTTP Honeypot","Web panels + sensitive file traps","Port "+(S.services.http?.port||8082)],
+    ["FTP Honeypot","Fake ProFTPD server","Port "+(S.services.ftp?.port||2123)],
+    ["Telnet Honeypot","Interactive fake shell simulator","Port "+(S.services.telnet?.port||2325)],
+    ["Dashboard","Monitoring UI + REST API","Port "+(location.port||3000)],
+    ["Storage","Persistent attack database","LevelDB"],
+    ["AI Engine","Anomaly detection model","Isolation Forest"],
+    ["GeoIP","Attacker geolocation","MaxMind GeoLite2"],
+    ["Auth","API authentication","Token-based"],
+    ["Notifications","Alert system","Desktop + Dashboard"],
+    ["Uptime","System runtime",`<span id="set-uptime">${formatUptime(S.uptime||0)}</span>`]
+  ].map(([l,d,v])=>`<div class="set-row"><div><div class="set-label">${l}</div><div class="set-desc">${d}</div></div><div class="set-val mono" style="display:flex;align-items:center">${v}</div></div>`).join("");
+  
+  // Quick CSS hack for the toggle slider
+  setTimeout(() => {
+    const chk = document.querySelector('input[type="checkbox"]');
+    if(chk) {
+      const ball = chk.nextElementSibling.querySelector('.slider-ball');
+      if(chk.checked) { chk.nextElementSibling.style.background = 'var(--red-soft)'; ball.style.transform = 'translateX(16px)'; ball.style.background = '#fff'; }
+      chk.addEventListener('change', function() {
+        if(this.checked) { this.nextElementSibling.style.background = 'var(--red-soft)'; ball.style.transform = 'translateX(16px)'; ball.style.background = '#fff'; }
+        else { this.nextElementSibling.style.background = 'var(--glass-strong)'; ball.style.transform = 'translateX(0)'; ball.style.background = 'var(--text-dim)'; }
+      });
+    }
+  }, 10);
 }
 
 async function resetSystem(){
