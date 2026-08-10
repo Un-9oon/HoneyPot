@@ -30,3 +30,16 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: honeypot-suricata
+    restart: unless-stopped
+    network_mode: "host" # Needs host network to sniff honeypot traffic
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      - ./data/suricata-logs:/var/log/suricata
+    command: -i any

@@ -2,6 +2,7 @@ const dns = require("dns");
 const os = require("os");
 const https = require("https");
 const http = require("http");
+const osint = require("./osint-engine");
 
 class AttackerProfiler {
   constructor() {
@@ -384,6 +385,16 @@ class AttackerProfiler {
             }
           }
         } catch { p.whoisData = null; }
+        
+        // Asynchronously query AbuseIPDB
+        osint.queryAbuseIPDB(ip).then(abuseData => {
+          if (!abuseData.status || abuseData.abuseConfidenceScore !== undefined) {
+            p.osint = p.osint || {};
+            p.osint.abuseIpdb = abuseData;
+            if (abuseData.abuseConfidenceScore > 50) p.behaviorScore = Math.min(p.behaviorScore + 30, 100);
+          }
+        });
+        
       });
     }).on("error", () => { p.whoisData = null; });
   }

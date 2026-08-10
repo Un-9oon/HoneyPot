@@ -9,6 +9,7 @@ const { Level } = require("level");
 const ch = require("./clickhouse");
 
 const AttackerProfiler = require("../../intel/profiler");
+const IDSEngine = require("../../intel/ids-engine");
 
 let geoip;
 try { geoip = require("geoip-lite"); } catch { geoip = null; }
@@ -21,6 +22,8 @@ class MonitorServer {
     this.bus = bus;
     this.config = config;
     this.bind = bind;
+    this.ids = new IDSEngine(this.bus);
+    this.ids.start();
     this.port = config.monitor?.port || 3000;
     this.attacks = [];
     this.sessions = [];
