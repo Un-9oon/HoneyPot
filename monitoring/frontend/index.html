@@ -563,6 +563,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
   <div class="grid g-3" id="atk-grid"></div>
 </div>
 
+<div class="page" id="page-intel">
+  <div class="page-hdr"><div><div class="page-title">Geo Intelligence</div><div class="page-sub">Deep behavioral profiling and MITRE ATT&CK mapping</div></div></div>
+  <div class="grid" id="intel-profiles" style="grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:24px"></div>
+</div>
+
 <div class="page" id="page-pcap">
   <div class="page-hdr">
     <div>
@@ -845,7 +850,10 @@ const bellBtn=document.getElementById("notif-bell"),bellDrop=document.getElement
 bellBtn.onclick=e=>{e.stopPropagation();bellDrop.classList.toggle("open")};
 document.addEventListener("click",()=>bellDrop.classList.remove("open"));
 bellDrop.onclick=e=>e.stopPropagation();
-document.getElementById("notif-clear-all").onclick=()=>{markAllRead();bellDrop.classList.remove("open")};
+const clearAllBtn = document.getElementById("notif-clear-all");
+if(clearAllBtn) {
+  clearAllBtn.onclick=()=>{markAllRead();bellDrop.classList.remove("open")};
+}
 
 function updateNotifBell(){
   const unread=S.notifications.filter(n=>!n.read).length;
