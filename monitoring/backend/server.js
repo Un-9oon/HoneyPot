@@ -340,7 +340,14 @@ class MonitorServer {
       ch.insertAttack(event); // Push to ClickHouse DB
       if (event.username) this.credentials.push(event);
       try { await this.db.put(`attack:${String(event.id).padStart(8, "0")}`, event); } catch {}
-      try { await this.profiler.processAttack(event); } catch {}
+      let profile = null;
+      try { profile = await this.profiler.processAttack(event); } catch (e) {}
+      
+      if (profile && SEVERITY_ORDER[profile.threatLevel] > SEVERITY_ORDER[event.analysis.severity]) {
+        event.analysis.severity = profile.threatLevel;
+        event.analysis.description = `[BEHAVIORAL ALERT - Score: ${profile.behaviorScore}/100] Escalated Threat! ${event.analysis.description}`;
+      }
+
       if (SEVERITY_ORDER[event.analysis.severity] >= SEVERITY_ORDER.MEDIUM) {
         const notif = { id: ++this.notifCounter, timestamp: event.timestamp, title: `${event.analysis.severity}: ${event.type}`, message: event.analysis.description, severity: event.analysis.severity, read: false, attackId: event.id, srcIP: event.srcIP, service: event.service };
         this.notifications.push(notif);
