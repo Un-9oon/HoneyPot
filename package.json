@@ -10,12 +10,13 @@
     "stop": "bash scripts/stop.sh"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "ws": "^8.18.0",
+    "@clickhouse/client": "^1.23.1",
     "chalk": "^4.1.2",
     "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "geoip-lite": "^1.4.10",
     "level": "^8.0.1",
     "ssh2": "^1.16.0",
-    "geoip-lite": "^1.4.10"
+    "ws": "^8.18.0"
   }
 }

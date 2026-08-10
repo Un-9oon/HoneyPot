@@ -16,3 +16,17 @@ services:
       - ./config/auth.json:/usr/src/app/config/auth.json
     environment:
       - NODE_ENV=production
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: honeypot-clickhouse
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./data/clickhouse:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144

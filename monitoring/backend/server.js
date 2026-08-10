@@ -6,6 +6,8 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { Level } = require("level");
 
+const ch = require("./clickhouse");
+
 const AttackerProfiler = require("../../intel/profiler");
 
 let geoip;
@@ -15,6 +17,7 @@ const SEVERITY_ORDER = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 };
 
 class MonitorServer {
   constructor(bus, config, bind) {
+    ch.initClickHouse();
     this.bus = bus;
     this.config = config;
     this.bind = bind;
@@ -334,6 +337,7 @@ class MonitorServer {
       event.geo = this._geoLookup(event.srcIP);
       event.analysis = this._analyzeAttack(event);
       this.attacks.push(event);
+      ch.insertAttack(event); // Push to ClickHouse DB
       if (event.username) this.credentials.push(event);
       try { await this.db.put(`attack:${String(event.id).padStart(8, "0")}`, event); } catch {}
       try { await this.profiler.processAttack(event); } catch {}
