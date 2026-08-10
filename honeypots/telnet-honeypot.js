@@ -79,6 +79,8 @@ class TelnetHoneypot {
             timestamp: new Date().toISOString(),
           });
 
+          const { exec } = require("child_process");
+          
           if (input === "exit" || input === "quit" || input === "logout") {
             socket.write("logout\r\n");
             pcapEngine.recordPacket(pcapId, "S_TO_C", "logout\r\n", "[CLOSE] Logout");
@@ -86,9 +88,24 @@ class TelnetHoneypot {
             return;
           }
 
-          const resp = this._fakeResponse(input) + "\r\n$ ";
-          socket.write(resp);
-          pcapEngine.recordPacket(pcapId, "S_TO_C", resp, `[RESP] Command: ${input}`);
+          const safeCmd = input.replace(/'/g, "'\\''"); 
+          exec(`docker exec honeypot-sandbox timeout 10 bash -c '${safeCmd}'`, { timeout: 12000 }, (err, stdout, stderr) => {
+            let resp = "";
+            const isDockerFail = err && (err.message.includes("permission denied") || err.message.includes("No such container") || err.message.includes("docker daemon") || err.message.includes("command not found"));
+            
+            if (isDockerFail) {
+              resp = this._fakeResponse(input);
+            } else {
+              resp = (stdout || "") + (stderr || "");
+              resp = resp.replace(/\n$/, ""); // remove trailing newline
+            }
+            
+            const fullResp = resp + (resp ? "\r\n$ " : "$ ");
+            if (!socket.destroyed) {
+              socket.write(fullResp);
+              pcapEngine.recordPacket(pcapId, "S_TO_C", fullResp, `[RESP] Command: ${input}`);
+            }
+          });
         }
       });
 
