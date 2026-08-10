@@ -123,5 +123,5 @@ echo -e "  - ${GREEN}pm2 status${NC}           (Check if the honeypot is running
 echo -e "  - ${GREEN}pm2 restart honeypot${NC} (Restart the honeypot)"
 echo ""
 echo -e "${RED}Security Warning:${NC} Ensure your cloud firewall (e.g. AWS Security Group)"
-echo -e "allows inbound traffic on ports 2222, 8080, 2121, 2323, and 3000."
+echo -e "allows inbound traffic on ports 2225, 8082, 2123, 2325, and 3000."
 echo "======================================================================"
