@@ -316,32 +316,34 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .atk-val{font-weight:600;color:var(--text)}
 
 /* CHART - 3D Glassmorphism */
-.chart-area{display:flex;align-items:flex-end;gap:8px;padding:20px 18px 16px;height:185px;position:relative;perspective:600px}
-.chart-area::before{content:'';position:absolute;bottom:16px;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,var(--glass-border-h),transparent)}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;transform-style:preserve-3d}
-.bar{width:100%;min-height:3px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,rgba(255,104,120,.9),var(--red),var(--crimson));transition:height .8s cubic-bezier(.4,0,.2,1),filter .3s,box-shadow .3s,transform .3s;position:relative;box-shadow:0 0 12px var(--red-glow),0 4px 8px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.15);animation:barGrow .8s ease both;border:1px solid rgba(255,100,120,.15);backdrop-filter:blur(4px)}
-.bar::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 40%,rgba(0,0,0,.1) 100%);pointer-events:none}
-.bar::after{content:attr(data-count);position:absolute;top:-20px;left:50%;transform:translateX(-50%) scale(.9);font-size:9px;font-weight:800;color:var(--red-soft);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);text-shadow:0 0 8px var(--red-glow);background:var(--surface);padding:1px 6px;border-radius:6px;border:1px solid var(--glass-border)}
-.bar-col:hover .bar::after{opacity:1;transform:translateX(-50%) scale(1) translateY(-4px)}
-.bar-col:hover .bar{filter:brightness(1.2);box-shadow:0 0 24px var(--red-glow-s),0 8px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.2);transform:scaleY(1.03) translateY(-2px)}
-.bar-lbl{font-size:7px;color:var(--text-muted);text-align:center;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.chart-area{display:flex;align-items:flex-end;gap:12px;padding:20px 24px 16px;height:200px;position:relative;perspective:800px}
+.chart-area::before{content:'';position:absolute;bottom:16px;left:24px;right:24px;height:2px;background:linear-gradient(90deg,transparent,var(--glass-border-h),transparent);box-shadow:0 0 10px var(--red-glow)}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;transform-style:preserve-3d;position:relative}
+.bar{width:100%;min-height:4px;border-radius:4px 4px 0 0;background:linear-gradient(180deg,rgba(255,60,90,.9) 0%,rgba(220,20,60,.85) 50%,rgba(160,10,40,.8) 100%);transition:all .8s cubic-bezier(.34,1.56,.64,1);position:relative;box-shadow:0 0 15px var(--red-glow-s),inset 0 0 12px rgba(255,255,255,.1);animation:barGrow .8s ease both;border:1px solid rgba(255,100,120,.2);border-bottom:none;transform-origin:bottom}
+.bar::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(90deg,rgba(255,255,255,.15) 0%,transparent 30%,transparent 70%,rgba(0,0,0,.2) 100%);pointer-events:none}
+.bar::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.3);border-radius:4px 4px 0 0;box-shadow:0 0 8px rgba(255,255,255,.5)}
+.bar-val-pop{position:absolute;top:-28px;left:50%;transform:translateX(-50%) scale(.8);font-size:10px;font-weight:900;color:var(--text);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);text-shadow:0 2px 4px rgba(0,0,0,.5);background:var(--sidebar-bg);padding:4px 8px;border-radius:var(--r-sm);border:1px solid var(--glass-border-h);box-shadow:0 4px 12px rgba(0,0,0,.4);pointer-events:none;z-index:2}
+.bar-val-pop::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%) rotate(45deg);width:8px;height:8px;background:var(--sidebar-bg);border-right:1px solid var(--glass-border-h);border-bottom:1px solid var(--glass-border-h)}
+.bar-col:hover .bar-val-pop{opacity:1;transform:translateX(-50%) scale(1) translateY(-5px)}
+.bar-col:hover .bar{filter:brightness(1.3);box-shadow:0 0 25px var(--red-glow-s),0 0 40px rgba(255,40,80,.2),inset 0 0 15px rgba(255,255,255,.2);transform:scaleY(1.02)}
+.bar-lbl{font-size:8px;color:var(--text-muted);text-align:center;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px}
 
 /* ANALYTICS - 3D Glassmorphism */
-.severity-bar{display:flex;height:40px;border-radius:var(--r-sm);overflow:hidden;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05);border:1px solid var(--glass-border);perspective:400px}
-.severity-bar div{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;transition:width .8s cubic-bezier(.4,0,.2,1),filter .3s,transform .3s;position:relative;text-shadow:0 1px 2px rgba(0,0,0,.3);cursor:default}
-.severity-bar div::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.18) 0%,transparent 50%,rgba(0,0,0,.1) 100%);pointer-events:none}
-.severity-bar div:hover{filter:brightness(1.15);transform:scaleY(1.05);z-index:1}
-.sb-crit{background:linear-gradient(135deg,var(--red),var(--crimson));box-shadow:inset 0 -2px 4px rgba(0,0,0,.2)}
-.sb-high{background:linear-gradient(135deg,var(--orange),#e07020);box-shadow:inset 0 -2px 4px rgba(0,0,0,.2)}
-.sb-med{background:linear-gradient(135deg,var(--yellow),#d4a010);color:#000!important;box-shadow:inset 0 -2px 4px rgba(0,0,0,.1)}
-.sb-low{background:linear-gradient(135deg,var(--green),#10a040);color:#000!important;box-shadow:inset 0 -2px 4px rgba(0,0,0,.1)}
-.sb-info{background:var(--text-muted);box-shadow:inset 0 -2px 4px rgba(0,0,0,.15)}
+.severity-bar{display:flex;height:48px;border-radius:24px;overflow:hidden;gap:3px;box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 2px 4px rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.05);background:var(--bg3);padding:3px;position:relative}
+.severity-bar div{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;transition:all .5s cubic-bezier(.34,1.56,.64,1);position:relative;text-shadow:0 1px 3px rgba(0,0,0,.5);cursor:default;border-radius:20px;min-width:0;overflow:hidden}
+.severity-bar div::before{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,rgba(255,255,255,.2) 0%,transparent 100%);pointer-events:none;border-radius:20px 20px 0 0}
+.severity-bar div:hover{filter:brightness(1.2);transform:scaleY(1.04);z-index:1;box-shadow:0 0 20px currentColor}
+.sb-crit{background:linear-gradient(135deg,#ff1040,#a00020);color:#ffccd5!important;box-shadow:inset 0 0 10px rgba(0,0,0,.3)}
+.sb-high{background:linear-gradient(135deg,#ff8000,#b04000);color:#ffe5cc!important;box-shadow:inset 0 0 10px rgba(0,0,0,.3)}
+.sb-med{background:linear-gradient(135deg,#ffc000,#a07000);color:#fff2cc!important;box-shadow:inset 0 0 10px rgba(0,0,0,.3)}
+.sb-low{background:linear-gradient(135deg,#00d050,#007020);color:#ccffdd!important;box-shadow:inset 0 0 10px rgba(0,0,0,.3)}
+.sb-info{background:linear-gradient(135deg,#606080,#303040);color:#e6e6f0!important;box-shadow:inset 0 0 10px rgba(0,0,0,.3)}
 .top-list{list-style:none}
-.top-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border2);font-size:10.5px;transition:all .25s}
-.top-item:hover{padding-left:6px;color:var(--text)}
-.top-bar{height:6px;border-radius:4px;background:var(--glass);margin-top:3px;border:1px solid var(--border);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.15)}
-.top-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--rose));transition:width 1s cubic-bezier(.4,0,.2,1);position:relative;box-shadow:0 0 6px var(--red-glow)}
-.top-bar-fill::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.2),transparent);border-radius:inherit}
+.top-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);font-size:11px;transition:all .3s}
+.top-item:hover{padding-left:8px;color:var(--text);background:linear-gradient(90deg,var(--glow-1),transparent)}
+.top-bar{height:8px;border-radius:4px;background:var(--bg3);margin-top:4px;border:1px solid var(--border);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.3)}
+.top-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--rose));transition:width 1.2s cubic-bezier(.34,1.56,.64,1);position:relative;box-shadow:0 0 10px var(--red-glow)}
+.top-bar-fill::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.3) 0%,transparent 100%);border-radius:inherit}
 
 /* ACTIVITY MINI */
 .mini-svc{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);transition:all .25s}
@@ -914,12 +916,12 @@ function renderTopAttackers(){
 function renderTypeChart(){
   const c=document.getElementById("type-chart"),counts={};S.attacks.forEach(a=>counts[a.type]=(counts[a.type]||0)+1);
   const e=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8),mx=Math.max(...e.map(x=>x[1]),1);
-  c.innerHTML=e.length?e.map(([t,n])=>`<div class="bar-col"><div class="bar" style="--h:${(n/mx)*135}px;height:${(n/mx)*135}px" data-count="${n}"></div><div class="bar-lbl">${t.replace(/_/g," ").substring(0,10)}</div></div>`).join(""):'<div class="empty" style="width:100%;display:flex;align-items:center;justify-content:center">No data</div>';
+  c.innerHTML=e.length?e.map(([t,n])=>`<div class="bar-col"><div class="bar-val-pop">${n}</div><div class="bar" style="height:${(n/mx)*135}px"></div><div class="bar-lbl">${t.replace(/_/g," ").substring(0,10)}</div></div>`).join(""):'<div class="empty" style="width:100%;display:flex;align-items:center;justify-content:center">No data</div>';
 }
 function renderSvcChart(){
   const c=document.getElementById("svc-chart"),counts={};S.attacks.forEach(a=>counts[a.service]=(counts[a.service]||0)+1);
   const e=Object.entries(counts),mx=Math.max(...e.map(x=>x[1]),1);
-  c.innerHTML=e.length?e.map(([s,n])=>`<div class="bar-col"><div class="bar" style="--h:${(n/mx)*135}px;height:${(n/mx)*135}px" data-count="${n}"></div><div class="bar-lbl">${s}</div></div>`).join(""):'<div class="empty" style="width:100%;display:flex;align-items:center;justify-content:center">No data</div>';
+  c.innerHTML=e.length?e.map(([s,n])=>`<div class="bar-col"><div class="bar-val-pop">${n}</div><div class="bar" style="height:${(n/mx)*135}px"></div><div class="bar-lbl">${s}</div></div>`).join(""):'<div class="empty" style="width:100%;display:flex;align-items:center;justify-content:center">No data</div>';
 }
 
 function renderServices(){
