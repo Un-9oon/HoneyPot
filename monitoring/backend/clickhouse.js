@@ -2,8 +2,8 @@ const { createClient } = require("@clickhouse/client");
 
 const client = createClient({
   host: process.env.CLICKHOUSE_HOST || "http://127.0.0.1:8123",
-  username: "default",
-  password: "",
+  username: process.env.CLICKHOUSE_USER || "nexus",
+  password: process.env.CLICKHOUSE_PASSWORD || "effb982b2bf3",
   database: "default",
   clickhouse_settings: {
     async_insert: 1,

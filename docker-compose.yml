@@ -1,29 +1,15 @@
 services:
-  honeypot:
-    build: .
-    container_name: advanced-honeypot
-    restart: unless-stopped
-    ports:
-      - "3000:3000"  # Dashboard
-      - "8080:8080"  # HTTP Trap
-      - "2222:2222"  # SSH Trap
-      - "2121:2121"  # FTP Trap
-      - "2323:2323"  # Telnet Trap
-    volumes:
-      # Persist data and logs outside the container
-      - ./data:/usr/src/app/data
-      - ./logs:/usr/src/app/logs
-      - ./config/auth.json:/usr/src/app/config/auth.json
-    environment:
-      - NODE_ENV=production
-
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: honeypot-clickhouse
     restart: unless-stopped
+    environment:
+      - CLICKHOUSE_USER=nexus
+      - CLICKHOUSE_PASSWORD=effb982b2bf3
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
     volumes:
       - ./data/clickhouse:/var/lib/clickhouse
     ulimits:
@@ -35,7 +21,9 @@ services:
     image: jasonish/suricata:latest
     container_name: honeypot-suricata
     restart: unless-stopped
-    network_mode: "host" # Needs host network to sniff honeypot traffic
+    network_mode: "host"
+    security_opt:
+      - no-new-privileges:true
     cap_add:
       - NET_ADMIN
       - NET_RAW
