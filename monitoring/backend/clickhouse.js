@@ -1,7 +1,7 @@
 const { createClient } = require("@clickhouse/client");
 
 const client = createClient({
-  host: process.env.CLICKHOUSE_HOST || "http://127.0.0.1:8123",
+  url: process.env.CLICKHOUSE_URL || "http://127.0.0.1:8123",
   username: process.env.CLICKHOUSE_USER || "nexus",
   password: process.env.CLICKHOUSE_PASSWORD || "effb982b2bf3",
   database: "default",
