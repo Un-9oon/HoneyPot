@@ -86,7 +86,7 @@ class MonitorServer {
 
     app.post("/api/login", (req, res) => {
       const { username, password } = req.body || {};
-      const authFile = path.join(__dirname, "../../config/auth.json");
+      const authFile = path.join(__dirname, "../../config/auth2.json");
       try {
         const auth = JSON.parse(fs.readFileSync(authFile, "utf8"));
         if (username === auth.username && password === auth.password) {
@@ -376,7 +376,7 @@ class MonitorServer {
   }
 
   _initAuth() {
-    const authFile = path.join(__dirname, "../../config/auth.json");
+    const authFile = path.join(__dirname, "../../config/auth2.json");
     // Generate new secure credentials on EVERY startup for maximum security
     const username = this.config.adminUser || "nexus";
     const password = crypto.randomBytes(6).toString("hex");

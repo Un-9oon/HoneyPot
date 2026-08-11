@@ -1,0 +1,2 @@
+[2026-08-11T16:36:11.538Z] INFO HTTP | http_request | 127.0.0.1:39454 | GET /wp-login.php
+[2026-08-11T17:13:04.476Z] INFO HTTP | http_request | 127.0.0.1:38796 | GET /admin-dashboard.php
