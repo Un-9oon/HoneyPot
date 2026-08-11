@@ -99,7 +99,7 @@ async function startServices() {
     const line = `[${ts}] ${sev ? sev + " " : ""}${event.service.toUpperCase()} | ${event.type} | ${event.srcIP}:${event.srcPort} | ${event.details || ""}`;
     console.log(chalk.red(`  ⚡ ${line}`));
 
-    const logDir = path.join(__dirname, "logs2");
+    const logDir = path.join(__dirname, "logs");
     fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(path.join(logDir, "attacks.log"), line + "\n");
 
@@ -112,35 +112,6 @@ async function startServices() {
       } catch {}
     }
 
-    // Embed ShieldWatch API telemetry sync
-    try {
-      const crypto = require("crypto");
-      const swPayload = JSON.stringify({
-        id: "hp-" + crypto.randomBytes(6).toString("hex"),
-        ip: event.srcIP || "0.0.0.0",
-        session: event.session || "honeypot-session",
-        verdict: 1, // Verdict: Malicious
-        threat: {
-          type: 99, // Custom type 99 for Honeypot traps
-          matched: `Honeypot Trap [${event.service.toUpperCase()}]`,
-          raw: `${event.type}: ${event.details || "Unauthorized Access"}`
-        }
-      });
-
-      const http = require("http");
-      const swReq = http.request("http://127.0.0.1:50052/grpc/report-event", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-shieldwatch-token": "shieldwatch-test-token-2024"
-        }
-      });
-      swReq.on("error", (e) => {
-        // Silently ignore ShieldWatch connection errors if offline
-      });
-      swReq.end(swPayload);
-    } catch (err) {}
-
     if (config.alerts?.webhooks?.length) {
       const payload = JSON.stringify({ text: line, event });
       for (const url of config.alerts.webhooks) {
@@ -152,8 +123,8 @@ async function startServices() {
     }
   });
 
-  fs.mkdirSync(path.join(__dirname, "data2"), { recursive: true });
-  fs.writeFileSync(path.join(__dirname, "data2/server.pid"), String(process.pid));
+  fs.mkdirSync(path.join(__dirname, "data"), { recursive: true });
+  fs.writeFileSync(path.join(__dirname, "data/server.pid"), String(process.pid));
 }
 
 function shutdown() {
@@ -161,7 +132,7 @@ function shutdown() {
   for (const svc of services) {
     try { svc.stop?.(); } catch {}
   }
-  try { fs.unlinkSync(path.join(__dirname, "data2/server.pid")); } catch {}
+  try { fs.unlinkSync(path.join(__dirname, "data/server.pid")); } catch {}
   console.log(chalk.green("  All services stopped.\n"));
   process.exit(0);
 }
@@ -170,7 +141,7 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 process.on("uncaughtException", (err) => {
   console.error(chalk.red(`  [ERROR] ${err.message}`));
-  fs.appendFileSync(path.join(__dirname, "logs2/error.log"), `[${new Date().toISOString()}] ${err.stack}\n`);
+  fs.appendFileSync(path.join(__dirname, "logs/error.log"), `[${new Date().toISOString()}] ${err.stack}\n`);
 });
 
 startServices().catch((err) => {
