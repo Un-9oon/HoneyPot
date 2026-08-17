@@ -2,6 +2,7 @@ const net = require("net");
 const crypto = require("crypto");
 
 const pcapEngine = require("../monitoring/backend/pcap-engine");
+const microvmEngine = require("./microvm-engine");
 
 class TelnetHoneypot {
   constructor(bus, cfg, bind) {
@@ -79,8 +80,6 @@ class TelnetHoneypot {
             timestamp: new Date().toISOString(),
           });
 
-          const { exec } = require("child_process");
-          
           if (input === "exit" || input === "quit" || input === "logout") {
             socket.write("logout\r\n");
             pcapEngine.recordPacket(pcapId, "S_TO_C", "logout\r\n", "[CLOSE] Logout");
@@ -88,18 +87,7 @@ class TelnetHoneypot {
             return;
           }
 
-          const safeCmd = input.replace(/'/g, "'\\''"); 
-          exec(`docker exec honeypot-sandbox timeout 10 bash -c '${safeCmd}'`, { timeout: 12000 }, (err, stdout, stderr) => {
-            let resp = "";
-            const isDockerFail = err && (err.message.includes("permission denied") || err.message.includes("No such container") || err.message.includes("docker daemon") || err.message.includes("command not found"));
-            
-            if (isDockerFail) {
-              resp = this._fakeResponse(input);
-            } else {
-              resp = (stdout || "") + (stderr || "");
-              resp = resp.replace(/\n$/, ""); // remove trailing newline
-            }
-            
+          this._execInSandbox(sessionId, input).then((resp) => {
             const fullResp = resp + (resp ? "\r\n$ " : "$ ");
             if (!socket.destroyed) {
               socket.write(fullResp);
@@ -113,6 +101,7 @@ class TelnetHoneypot {
         pcapEngine.markStatus(pcapId, "FAILED");
       });
       socket.on("close", () => {
+        microvmEngine.destroyMicroVM(sessionId);
         pcapEngine.markStatus(pcapId, loginAttempts >= 3 ? "SUCCESSFUL" : "FAILED");
         this.bus.emit("session_end", {
           service: "telnet", srcIP, srcPort, sessionId,
@@ -132,6 +121,19 @@ class TelnetHoneypot {
       this.server.on("error", reject);
       this.server.listen(this.port, this.bind, () => resolve());
     });
+  }
+
+  async _execInSandbox(sessionId, cmd) {
+    if (microvmEngine.isAvailable()) {
+      // Ensure a microVM is running for this session
+      if (!microvmEngine.activeVMs.has(sessionId)) {
+        await microvmEngine.spawnMicroVM(sessionId);
+      }
+      const result = await microvmEngine.executeCommand(sessionId, cmd);
+      if (result !== null) return result;
+    }
+    // Firecracker unavailable or command failed — use safe fake responses
+    return this._fakeResponse(cmd);
   }
 
   _fakeResponse(cmd) {

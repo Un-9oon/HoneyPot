@@ -1,9 +1,13 @@
 const { createClient } = require("@clickhouse/client");
 
+if (!process.env.CLICKHOUSE_PASSWORD) {
+  try { require("dotenv").config({ path: require("path").join(__dirname, "../../.env") }); } catch {}
+}
+
 const client = createClient({
   url: process.env.CLICKHOUSE_URL || "http://127.0.0.1:8123",
-  username: process.env.CLICKHOUSE_USER || "nexus",
-  password: process.env.CLICKHOUSE_PASSWORD || "effb982b2bf3",
+  username: process.env.CLICKHOUSE_USER || "default",
+  password: process.env.CLICKHOUSE_PASSWORD || "",
   database: "default",
   clickhouse_settings: {
     async_insert: 1,

@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const https = require("https");
 const { WebSocketServer } = require("ws");
 const path = require("path");
 const fs = require("fs");
@@ -215,7 +216,8 @@ class MonitorServer {
       const format = req.query.format || "json";
       if (format === "csv") {
         const header = "id,timestamp,service,type,srcIP,srcPort,severity,details,username,password\n";
-        const rows = this.attacks.map(a => [a.id, a.timestamp, a.service, a.type, a.srcIP, a.srcPort, a.analysis?.severity || "", (a.details || "").replace(/,/g, ";"), a.username || "", a.password || ""].join(",")).join("\n");
+        const csvSafe = (v) => { const s = String(v); if (/^[=+\-@\t\r]/.test(s)) return "'" + s; return s.includes(",") || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+        const rows = this.attacks.map(a => [a.id, a.timestamp, a.service, a.type, a.srcIP, a.srcPort, a.analysis?.severity || "", csvSafe(a.details || ""), csvSafe(a.username || ""), csvSafe(a.password || "")].join(",")).join("\n");
         res.header("Content-Type", "text/csv");
         res.header("Content-Disposition", "attachment; filename=honeypot-attacks.csv");
         res.send(header + rows);
@@ -325,12 +327,12 @@ class MonitorServer {
       res.json(report);
     });
 
-    this.server = http.createServer(app);
+    this.server = this._createServer(app);
     const wss = new WebSocketServer({ server: this.server, path: this.config.monitor?.wsPath || "/ws" });
     wss.on("connection", (ws, req) => {
       const url = new URL(req.url, `http://${req.headers.host}`);
       const token = url.searchParams.get("token");
-      const clientIP = (req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "").replace("::ffff:", "");
+      const clientIP = (req.socket.remoteAddress || "").replace("::ffff:", "");
       const isLocal = clientIP === "127.0.0.1" || clientIP === "localhost" || clientIP === "::1" || clientIP.startsWith("127.");
       if (!isLocal && token !== this.authToken) {
         ws.close(4001, "Unauthorized");
@@ -342,13 +344,22 @@ class MonitorServer {
       ws.on("error", () => this.wsClients.delete(ws));
     });
 
+    const MAX_ATTACKS = 10000;
+    const MAX_CREDS = 5000;
+    const MAX_SESSIONS = 2000;
+    const MAX_CONNECTIONS = 2000;
+
     this.bus.on("attack", async (event) => {
       event.id = ++this.attackCounter;
       event.geo = this._geoLookup(event.srcIP);
       event.analysis = this._analyzeAttack(event);
       this.attacks.push(event);
-      ch.insertAttack(event); // Push to ClickHouse DB
-      if (event.username) this.credentials.push(event);
+      if (this.attacks.length > MAX_ATTACKS) this.attacks = this.attacks.slice(-Math.floor(MAX_ATTACKS * 0.8));
+      ch.insertAttack(event);
+      if (event.username) {
+        this.credentials.push(event);
+        if (this.credentials.length > MAX_CREDS) this.credentials = this.credentials.slice(-Math.floor(MAX_CREDS * 0.8));
+      }
       try { await this.db.put(`attack:${String(event.id).padStart(8, "0")}`, event); } catch {}
       let profile = null;
       try { profile = await this.profiler.processAttack(event); } catch (e) {}
@@ -367,12 +378,66 @@ class MonitorServer {
       this._broadcast({ type: "attack", data: event });
     });
 
-    this.bus.on("connection", (event) => { this.connections.push(event); this._broadcast({ type: "connection", data: event }); });
-    this.bus.on("session_end", (event) => { this.sessions.push(event); this._broadcast({ type: "session_end", data: event }); });
+    this.bus.on("connection", (event) => {
+      this.connections.push(event);
+      if (this.connections.length > MAX_CONNECTIONS) this.connections = this.connections.slice(-Math.floor(MAX_CONNECTIONS * 0.8));
+      this._broadcast({ type: "connection", data: event });
+    });
+    this.bus.on("session_end", (event) => {
+      this.sessions.push(event);
+      if (this.sessions.length > MAX_SESSIONS) this.sessions = this.sessions.slice(-Math.floor(MAX_SESSIONS * 0.8));
+      this._broadcast({ type: "session_end", data: event });
+    });
 
     setInterval(() => { const now = Date.now(); for (const [key, entry] of this.rateLimits) { if (now > entry.reset + 120000) this.rateLimits.delete(key); } }, 300000);
 
     return new Promise((resolve, reject) => { this.server.on("error", reject); this.server.listen(this.port, this.bind, () => resolve()); });
+  }
+
+  _createServer(app) {
+    const certDir = path.join(__dirname, "../../config/tls");
+    const certPath = path.join(certDir, "cert.pem");
+    const keyPath = path.join(certDir, "key.pem");
+
+    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+      const opts = {
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+      };
+      console.log("  [TLS] HTTPS enabled with certificate from config/tls/");
+      return https.createServer(opts, app);
+    }
+
+    // Auto-generate self-signed cert for immediate TLS
+    try {
+      fs.mkdirSync(certDir, { recursive: true });
+      const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: "spki", format: "pem" },
+        privateKeyEncoding: { type: "pkcs8", format: "pem" },
+      });
+
+      // Create a minimal self-signed X.509 cert using OpenSSL via child_process
+      const { execSync } = require("child_process");
+      fs.writeFileSync(keyPath, privateKey);
+      try {
+        execSync(
+          `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/CN=HoneyPot Dashboard" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>/dev/null`,
+          { timeout: 10000 }
+        );
+        const opts = {
+          cert: fs.readFileSync(certPath),
+          key: fs.readFileSync(keyPath),
+        };
+        console.log("  [TLS] HTTPS enabled with auto-generated self-signed certificate");
+        return https.createServer(opts, app);
+      } catch {
+        console.log("  [TLS] OpenSSL not available, falling back to HTTP (install openssl for HTTPS)");
+      }
+    } catch {}
+
+    console.log("  [TLS] Running HTTP (place cert.pem + key.pem in config/tls/ for HTTPS)");
+    return http.createServer(app);
   }
 
   _initAuth() {
@@ -460,7 +525,7 @@ class MonitorServer {
   }
 
   _broadcast(data) { const msg = JSON.stringify(data); for (const ws of this.wsClients) { try { if (ws.readyState === 1) ws.send(msg); } catch {} } }
-  _getIP(req) { return (req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "").replace("::ffff:", ""); }
+  _getIP(req) { return (req.socket.remoteAddress || "").replace("::ffff:", ""); }
 
   async _loadFromDB() {
     try {

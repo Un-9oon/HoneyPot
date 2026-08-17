@@ -1,7 +1,10 @@
 node_modules/
 .env
+*.env
+monitoring/backend/.env
 logs/
 data/
 config/auth.json
 config/ssh_host_key
+config/tls/
 install.log
